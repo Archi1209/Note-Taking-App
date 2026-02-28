@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Note Taking App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #4a90d9; --bg: #f5f7fa; --card: #fff;
+      --text: #2c3e50; --text-secondary: #7f8c8d;
+      --border: #e1e8ed; --shadow: 0 2px 8px rgba(0,0,0,0.1);
+      --danger: #e74c3c; --success: #2ecc71;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.8rem; }
+    .search-box { position: relative; width: 300px; }
+    .search-box input { width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border: none; border-radius: 25px; font-size: 0.95rem; outline: none; box-shadow: var(--shadow); }
+    .search-box .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+    .container { display: flex; gap: 1.5rem; padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+    .sidebar { width: 280px; background: var(--card); border-radius: 8px; padding: 1.5rem; box-shadow: var(--shadow); height: fit-content; }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.3s; }
+    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 100%; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .sidebar-section { margin-top: 1.5rem; }
+    .sidebar-section h3 { font-size: 1rem; margin-bottom: 0.75rem; }
+    .category-item, .tag-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border-radius: 6px; cursor: pointer; }
+    .category-item:hover, .tag-item:hover { background: var(--bg); }
+    .category-color { width: 12px; height: 12px; border-radius: 50%; }
+    .tag { background: #e8f4fd; color: var(--primary); padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.85rem; }
+    .add-form { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+    .add-form input { flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
+    .add-form button { padding: 0.5rem 1rem; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .notes-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .note-card { background: var(--card); border-radius: 8px; padding: 1.25rem; box-shadow: var(--shadow); cursor: pointer; transition: all 0.3s; position: relative; }
+    .note-card:hover { transform: translateY(-4px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    .note-card h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .note-card p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem; }
+    .note-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .note-category { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; color: white; }
+    .note-tags { display: flex; gap: 0.25rem; }
+    .tag-small { color: var(--primary); font-size: 0.8rem; }
+    .delete-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; font-size: 1.1rem; opacity: 0; transition: opacity 0.3s; }
+    .note-card:hover .delete-btn { opacity: 1; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: var(--card); border-radius: 8px; padding: 2rem; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h2 { font-size: 1.25rem; }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; font-family: inherit; }
+    .form-group textarea { min-height: 150px; resize: vertical; }
+    .tags-selector { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tag-checkbox { display: flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: var(--bg); border-radius: 6px; cursor: pointer; }
+    .form-actions { display: flex; gap: 0.75rem; }
+    .btn-secondary { background: var(--text-secondary); color: white; }
+    .empty-state { grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-secondary); }
+    @media (max-width: 900px) { .container { flex-direction: column; } .sidebar { width: 100%; } }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>📝 Note Taking App</h1>
+    <div class="search-box">
+      <span class="icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search notes...">
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar">
+      <button class="btn btn-primary" onclick="openModal()">+ New Note</button>
+      
+      <div class="sidebar-section">
+        <h3>Categories</h3>
+        <div id="categoriesList"></div>
+        <div class="add-form">
+          <input type="text" id="newCategory" placeholder="Add category...">
+          <button onclick="addCategory()">+</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Tags</h3>
+        <div id="tagsList"></div>
+        <div class="add-form">
+          <input type="text" id="newTag" placeholder="Add tag...">
+          <button onclick="addTag()">+</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="notes-grid" id="notesGrid"></main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="noteModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">New Note</h2>
+        <button class="close-btn" onclick="closeModal()">×</button>
+      </div>
+      <form id="noteForm" onsubmit="saveNote(event)">
+        <input type="hidden" id="noteId">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="noteTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Content</label>
+          <textarea id="noteContent"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="noteCategory">
+            <option value="">No category</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tags</label>
+          <div class="tags-selector" id="tagsSelector"></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Note</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Data Storage
+    let notes = JSON.parse(localStorage.getItem('notes')) || [];
+    let categories = JSON.parse(localStorage.getItem('categories')) || [
+      { id: 1, name: 'Personal', color: '#e74c3c' },
+      { id: 2, name: 'Work', color: '#3498db' },
+      { id: 3, name: 'Ideas', color: '#9b59b6' },
+      { id: 4, name: 'Tasks', color: '#f39c12' }
+    ];
+    let tags = JSON.parse(localStorage.getItem('tags')) || [
+      { id: 1, name: 'important' },
+      { id: 2, name: 'todo' },
+      { id: 3, name: 'idea' }
+    ];
+
+    // Save to localStorage
+    function saveData() {
+      localStorage.setItem('notes', JSON.stringify(notes));
+      localStorage.setItem('categories', JSON.stringify(categories));
+      localStorage.setItem('tags', JSON.stringify(tags));
+    }
+
+    // Render
+    function render() {
+      renderCategories();
+      renderTags();
+      renderNotes();
+    }
+
+    function renderCategories() {
+      const list = document.getElementById('categoriesList');
+      list.innerHTML = categories.map(c => `
+        <div class="category-item">
+          <span class="category-color" style="background: ${c.color}"></span>
+          <span>${c.name}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderTags() {
+      const list = document.getElementById('tagsList');
+      list.innerHTML = tags.map(t => `<span class="tag">#${t.name}</span>`).join(' ');
+    }
+
+    function renderNotes() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const grid = document.getElementById('notesGrid');
+      
+      let filtered = notes;
+      if (query) {
+        filtered = notes.filter(n => 
+          n.title.toLowerCase().includes(query) || 
+          n.content.toLowerCase().includes(query)
+        );
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><p>No notes yet. Create your first note!</p></div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(note => {
+        const cat = categories.find(c => c.id === note.categoryId);
+        return `
+          <div class="note-card" onclick="editNote(${note.id})">
+            <h3>${note.title}</h3>
+            <p>${note.content.substring(0, 100)}...</p>
+            <div class="note-meta">
+              ${cat ? `<span class="note-category" style="background: ${cat.color}">${cat.name}</span>` : ''}
+              <div class="note-tags">
+                ${(note.tagIds || []).map(tid => {
+                  const t = tags.find(tag => tag.id === tid);
+                  return t ? `<span class="tag-small">#${t.name}</span>` : '';
+                }).join('')}
+              </div>
+            </div>
+            <button class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id})">🗑️</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal
+    function openModal(noteId = null) {
+      document.getElementById('noteModal').classList.add('active');
+      document.getElementById('noteForm').reset();
+      document.getElementById('noteId').value = '';
+      document.getElementById('modalTitle').textContent = 'New Note';
+
+      // Populate categories
+      const catSelect = document.getElementById('noteCategory');
+      catSelect.innerHTML = '<option value="">No category</option>' + 
+        categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+      // Populate tags
+      const tagsSel = document.getElementById('tagsSelector');
+      tagsSel.innerHTML = tags.map(t => `
+        <label class="tag-checkbox">
+          <input type="checkbox" value="${t.id}"> #${t.name}
+        </label>
+      `).join('');
+
+      if (noteId) {
+        const note = notes.find(n => n.id === noteId);
+        document.getElementById('noteId').value = note.id;
+        document.getElementById('noteTitle').value = note.title;
+        document.getElementById('noteContent').value = note.content;
+        document.getElementById('noteCategory').value = note.categoryId || '';
+        document.getElementById('modalTitle').textContent = 'Edit Note';
+        
+        (note.tagIds || []).forEach(tid => {
+          const cb = document.querySelector(`#tagsSelector input[value="${tid}"]`);
+          if (cb) cb.checked = true;
+        });
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('noteModal').classList.remove('active');
+    }
+
+    function editNote(id) {
+      openModal(id);
+    }
+
+    function saveNote(e) {
+      e.preventDefault();
+      const id = document.getElementById('noteId').value;
+      const title = document.getElementById('noteTitle').value;
+      const content = document.getElementById('noteContent').value;
+      const categoryId = document.getElementById('noteCategory').value ? parseInt(document.getElementById('noteCategory').value) : null;
+      
+      const tagIds = [];
+      document.querySelectorAll('#tagsSelector input:checked').forEach(cb => {
+        tagIds.push(parseInt(cb.value));
+      });
+
+      if (id) {
+        const note = notes.find(n => n.id === parseInt(id));
+        note.title = title;
+        note.content = content;
+        note.categoryId = categoryId;
+        note.tagIds = tagIds;
+        note.updatedAt = new Date().toISOString();
+      } else {
+        notes.push({
+          id: Date.now(),
+          title, content, categoryId, tagIds,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      saveData();
+      render();
+      closeModal();
+    }
+
+    function deleteNote(id) {
+      if (confirm('Delete this note?')) {
+        notes = notes.filter(n => n.id !== id);
+        saveData();
+        render();
+      }
+    }
+
+    function addCategory() {
+      const name = document.getElementById('newCategory').value.trim();
+      if (name) {
+        categories.push({ id: Date.now(), name, color: '#' + Math.floor(Math.random()*16777215).toString(16) });
+        saveData();
+        render();
+        document.getElementById('newCategory').value = '';
+      }
+    }
+
+    function addTag() {
+      const name = document.getElementById('newTag').value.trim();
+      if (name) {
+        tags.push({ id: Date.now(), name });
+        saveData();
+        render();
+        document.getElementById('newTag').value = '';
+      }
+    }
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', renderNotes);
+
+    // Init
+    render();
+  </script>
+</body>
+</html>
